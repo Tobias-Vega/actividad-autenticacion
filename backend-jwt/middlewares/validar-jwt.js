@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { SECRET_KEY } from '../config/env.js';
 import { newConnection } from '../db/database.js';
 
+// Middleware para verificar el token JWT
 export const validarJwt = async (req, res, next) => {
     console.log(req.session);
     console.log('-----------');
@@ -14,31 +15,28 @@ export const validarJwt = async (req, res, next) => {
     }
 
     try {
+        // Verificar y decodificar el token JWT
         const decoded = jwt.verify(token, SECRET_KEY);
-        const userId = decoded.id;
 
-        if (!userId) {
-            return res.status(401).json({ msg: 'Token inválido' });
-        }
-
+        // Crear una nueva conexión a la base de datos
         const connection = await newConnection();
 
-        const [result] = await connection.query('SELECT * FROM users WHERE id = ? LIMIT 1', [userId]);
+        // Buscar al usuario en la base de datos por el ID obtenido del token
+        const [user] = await connection.query('SELECT * FROM users WHERE id = ? LIMIT 1', [decoded.userId]);
 
-        if (result.length === 0) {
-            connection.end();
-            return res.status(401).json({ msg: 'Usuario no encontrado' });
+        if (user.length === 0) {
+            connection.end();  // Cerrar la conexión si no se encuentra el usuario
+            return res.status(401).json({ message: 'Token inválido' });
         }
 
-        req.session.userId = userId;
-        req.session.username = result[0].username;
+        // Agregar la información del usuario al request
+        req.user = user[0];
 
-        connection.end();
+        connection.end();  // Cerrar la conexión después de la operación
 
-        next();
-
+        next();  // Pasar al siguiente middleware
     } catch (error) {
         console.error('Ocurrió un error', error);
-        res.status(500).json({ msg: 'Internal server error', error: error.message });
+        return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
     }
 };
