@@ -5,7 +5,8 @@ export const newConnection = async () => {
         const connection = await createConnection({
             host: 'localhost',
             user: 'root',
-            database: 'db_system'
+            database: 'db_system',
+            password: ''
         })
         return connection
     } catch (error) {
