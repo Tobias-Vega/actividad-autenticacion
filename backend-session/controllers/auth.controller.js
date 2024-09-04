@@ -50,23 +50,12 @@ export const login = async (req, res) => {
 
 // Ruta para obtener los datos de la sesión
 export const session = async (req, res) => {
-    try {
-        const connection = await newConnection()
-
-        const [result] = await connection.query(`SELECT * FROM users`)
-    
-        if(result.length === 0) {
-            res.status(400)
-        }
-    
-        res.json(result)
-
-        connection.end()
-    } catch (error) {
-        console.error('Ocurrió un error', error);
-        res.status(500).json({ msg: 'Internal server error', error: error.msg})
+    if (req.session.userId) {
+        return res.json({
+            loggedIn: true,
+            user: { id: req.session.userId, username: req.session.username }
+        })
     }
-    
 };
 
 // Ruta para cerrar la sesión
